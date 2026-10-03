@@ -1,0 +1,937 @@
+{
+  "name": "[YCAT/VAPI] Demo - Outbound Lead Qualifier",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "YCAT Live-Demo",
+        "formDescription": "Formular absenden - unser KI-Assistent ruft Sie in wenigen Sekunden an.",
+        "formFields": {
+          "values": [
+            {
+              "fieldName": "Name",
+              "fieldLabel": "Name",
+              "requiredField": true
+            },
+            {
+              "fieldName": "Telefonnummer",
+              "fieldLabel": "Telefonnummer (mit Vorwahl, z.B. 030... oder +49...)",
+              "requiredField": true
+            },
+            {
+              "fieldName": "E-Mail",
+              "fieldLabel": "E-Mail",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldName": "Firma",
+              "fieldLabel": "Firma",
+              "requiredField": true
+            },
+            {
+              "fieldName": "Anliegen",
+              "fieldLabel": "Anliegen - was sollen wir automatisieren?",
+              "requiredField": true
+            },
+            {
+              "fieldName": "Firmengroesse",
+              "fieldLabel": "Firmengröße",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "1"
+                  },
+                  {
+                    "option": "2-10"
+                  },
+                  {
+                    "option": "11-50"
+                  },
+                  {
+                    "option": "51-100"
+                  },
+                  {
+                    "option": "101+"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Demo-Formular",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.4,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// E.164 normalization, German default. Output key 'Phone Number'.\nconst items = $input.all();\nreturn items.map(item => {\n  let raw = String(item.json['Telefonnummer'] ?? '').trim();\n  let plus = raw.startsWith('+');\n  let digits = raw.replace(/\\D/g, '');\n  let out;\n  if (plus) {\n    out = (digits.length >= 8 && digits.length <= 15) ? '+' + digits : 'incorrect format';\n  } else if (digits.startsWith('00')) {\n    const rest = digits.slice(2);\n    out = (rest.length >= 8 && rest.length <= 15) ? '+' + rest : 'incorrect format';\n  } else if (digits.startsWith('0')) {\n    const rest = digits.slice(1);\n    out = (rest.length >= 7 && rest.length <= 13) ? '+49' + rest : 'incorrect format';\n  } else {\n    out = 'incorrect format';\n  }\n  return { json: { ...item.json, 'Phone Number': out } };\n});"
+      },
+      "name": "Normalize Phone",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a05314ad-0f6b-50a8-8f8b-69295dfc64e2",
+              "leftValue": "={{ $json['Phone Number'] }}",
+              "rightValue": "incorrect format",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Invalid Number?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "__GOOGLE_SHEET_ID__",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Demo Submissions",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now.format('yyyy-MM-dd HH:mm') }}",
+            "Name": "={{ $('Demo-Formular').first().json.Name }}",
+            "Phone": "={{ $('Demo-Formular').first().json['Telefonnummer'] }}",
+            "Email": "={{ $('Demo-Formular').first().json['E-Mail'] }}",
+            "Company": "={{ $('Demo-Formular').first().json.Firma }}",
+            "Request": "={{ $('Demo-Formular').first().json.Anliegen }}",
+            "Company Size": "={{ $('Demo-Formular').first().json.Firmengroesse }}",
+            "Status": "Ungültige Nummer"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Request",
+              "displayName": "Request",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company Size",
+              "displayName": "Company Size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service Interest",
+              "displayName": "Service Interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Motivation",
+              "displayName": "Motivation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Urgency",
+              "displayName": "Urgency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Past Experience",
+              "displayName": "Past Experience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Budget",
+              "displayName": "Budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Appointment Interest",
+              "displayName": "Appointment Interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "name": "Log Invalid",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        624,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.vapi.ai/call",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"assistantId\": \"__VAPI_ASSISTANT_ID_QUALIFIER_DE__\",\n  \"phoneNumberId\": \"__VAPI_PHONE_NUMBER_ID__\",\n  \"customers\": [ { \"number\": \"{{ $json['Phone Number'] }}\" } ],\n  \"assistantOverrides\": {\n    \"variableValues\": {\n      \"lead_name\": {{ JSON.stringify($('Demo-Formular').first().json.Name) }},\n      \"lead_company_name\": {{ JSON.stringify($('Demo-Formular').first().json.Firma) }},\n      \"lead_request\": {{ JSON.stringify($('Demo-Formular').first().json.Anliegen) }}\n    }\n  }\n}",
+        "options": {}
+      },
+      "name": "Call Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        624,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 60
+      },
+      "name": "Wait 60s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        832,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.vapi.ai/call/{{ $('Call Lead').first().json.results[0].id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "name": "Get Call Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1024,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7d44dbfb-6682-507d-8a01-4957fe912e4f",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ended",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Ended?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1232,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "name": "Polling 10s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1232,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7cf746dd-f822-5834-a596-307a762a09a7",
+              "leftValue": "={{ $json.endedReason }}",
+              "rightValue": "voicemail",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Voicemail?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1440,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "__GOOGLE_SHEET_ID__",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Demo Submissions",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now.format('yyyy-MM-dd HH:mm') }}",
+            "Name": "={{ $('Demo-Formular').first().json.Name }}",
+            "Phone": "={{ $('Demo-Formular').first().json['Telefonnummer'] }}",
+            "Email": "={{ $('Demo-Formular').first().json['E-Mail'] }}",
+            "Company": "={{ $('Demo-Formular').first().json.Firma }}",
+            "Request": "={{ $('Demo-Formular').first().json.Anliegen }}",
+            "Company Size": "={{ $('Demo-Formular').first().json.Firmengroesse }}",
+            "Service Interest": "N/A",
+            "Motivation": "N/A",
+            "Urgency": "N/A",
+            "Past Experience": "N/A",
+            "Budget": "N/A",
+            "Appointment Interest": "N/A",
+            "Summary": "N/A",
+            "Status": "Voicemail - erneut anrufen"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Request",
+              "displayName": "Request",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company Size",
+              "displayName": "Company Size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service Interest",
+              "displayName": "Service Interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Motivation",
+              "displayName": "Motivation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Urgency",
+              "displayName": "Urgency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Past Experience",
+              "displayName": "Past Experience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Budget",
+              "displayName": "Budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Appointment Interest",
+              "displayName": "Appointment Interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "name": "Log Voicemail",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1680,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "__GOOGLE_SHEET_ID__",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Demo Submissions",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now.format('yyyy-MM-dd HH:mm') }}",
+            "Name": "={{ $('Demo-Formular').first().json.Name }}",
+            "Phone": "={{ $('Demo-Formular').first().json['Telefonnummer'] }}",
+            "Email": "={{ $('Demo-Formular').first().json['E-Mail'] }}",
+            "Company": "={{ $('Demo-Formular').first().json.Firma }}",
+            "Request": "={{ $('Demo-Formular').first().json.Anliegen }}",
+            "Company Size": "={{ $('Demo-Formular').first().json.Firmengroesse }}",
+            "Service Interest": "={{ $json.artifact?.structuredOutputs?.['__SO_SERVICE_INTEREST_ID__']?.result ?? '' }}",
+            "Motivation": "={{ $json.artifact?.structuredOutputs?.['__SO_MOTIVATION_ID__']?.result ?? '' }}",
+            "Urgency": "={{ $json.artifact?.structuredOutputs?.['__SO_URGENCY_ID__']?.result ?? '' }}",
+            "Past Experience": "={{ $json.artifact?.structuredOutputs?.['__SO_PAST_EXPERIENCE_ID__']?.result ?? '' }}",
+            "Budget": "={{ $json.artifact?.structuredOutputs?.['__SO_BUDGET_ID__']?.result ?? '' }}",
+            "Appointment Interest": "={{ $json.artifact?.structuredOutputs?.['__SO_APPOINTMENT_INTEREST_ID__']?.result ?? '' }}",
+            "Summary": "={{ $json.artifact?.structuredOutputs?.['__SO_CALL_SUMMARY_ID__']?.result ?? '' }}",
+            "Status": "Abgeschlossen",
+            "Callback Window": "={{ $json.artifact?.structuredOutputs?.['__SO_CALLBACK_WINDOW_ID__']?.result ?? '' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Request",
+              "displayName": "Request",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company Size",
+              "displayName": "Company Size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service Interest",
+              "displayName": "Service Interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Motivation",
+              "displayName": "Motivation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Urgency",
+              "displayName": "Urgency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Past Experience",
+              "displayName": "Past Experience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Budget",
+              "displayName": "Budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Appointment Interest",
+              "displayName": "Appointment Interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Callback Window",
+              "displayName": "Callback Window",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "name": "Log Complete",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1680,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Demo · Outbound Lead Qualifier\nFormular-Eingang → E.164-Normalisierung (DE) → KI-Sprachagent (Vapi) ruft den Lead innerhalb von Sekunden an → natürliche Qualifizierung → Ergebnis-Logging in Google Sheets.\n\nEnthaltene Logik: Rufnummern-Validierung, Voicemail-Erkennung, Status-Polling bis Gesprächsende, getrennte Logs für abgeschlossen / Voicemail / ungültig.\n\nAls Template pro Kunde duplizierbar: eigener Assistant, eigene Rufnummer, eigenes Sheet.",
+        "height": 388,
+        "width": 460
+      },
+      "name": "Setup-Notiz",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -448
+      ]
+    }
+  ],
+  "connections": {
+    "Demo-Formular": {
+      "main": [
+        [
+          {
+            "node": "Normalize Phone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Phone": {
+      "main": [
+        [
+          {
+            "node": "Invalid Number?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invalid Number?": {
+      "main": [
+        [
+          {
+            "node": "Log Invalid",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Lead": {
+      "main": [
+        [
+          {
+            "node": "Wait 60s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 60s": {
+      "main": [
+        [
+          {
+            "node": "Get Call Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Call Details": {
+      "main": [
+        [
+          {
+            "node": "Ended?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ended?": {
+      "main": [
+        [
+          {
+            "node": "Voicemail?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Polling 10s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Polling 10s": {
+      "main": [
+        [
+          {
+            "node": "Get Call Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voicemail?": {
+      "main": [
+        [
+          {
+            "node": "Log Voicemail",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

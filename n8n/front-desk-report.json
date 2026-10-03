@@ -1,0 +1,278 @@
+{
+  "name": "[YCAT/VAPI] Inbound - Front Desk Report",
+  "nodes": [
+    {
+      "name": "Vapi Report Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vapi-inbound-report",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "name": "Is End-of-Call-Report?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "abb784f5-86c9-5579-95ff-663b407117f6",
+              "leftValue": "={{ $json.body?.message?.type || $json.message?.type }}",
+              "rightValue": "end-of-call-report",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Extract Call Facts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        -80
+      ],
+      "parameters": {
+        "jsCode": "const w = $input.first().json;\nconst b = w.body || w;\nconst m = b.message || {};\nconst so = (m.artifact && m.artifact.structuredOutputs) || {};\nconst g = id => { const v = so[id]; return v == null ? '' : (v.result != null ? v.result : v); };\nconst callerName = g('__SO_CALLER_NAME_ID__');\nconst callerCompany = g('__SO_CALLER_COMPANY_ID__');\nconst category = g('__SO_CALLER_CATEGORY_ID__');\nconst reason = g('__SO_REASON_SUMMARY_ID__');\nconst action = g('__SO_ACTION_REQUESTED_ID__');\nconst wantsCb = g('__SO_WANTS_ERWIN_CALLBACK_ID__');\nconst call = m.call || {};\nreturn [{ json: {\n  startedAt: m.startedAt || '',\n  callerNumber: (call.customer && call.customer.number) || '',\n  callerName, callerCompany, category, reason, action,\n  wantsCallback: String(wantsCb),\n  summary: (m.analysis && m.analysis.summary) || reason,\n  recording: (m.artifact && m.artifact.recordingUrl) || '',\n}}];"
+      }
+    },
+    {
+      "name": "Log Inbound Call",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        620,
+        -80
+      ],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "__GOOGLE_SHEET_ID__",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Inbound Calls",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now.format('yyyy-MM-dd HH:mm') }}",
+            "Caller Number": "={{ $json.callerNumber }}",
+            "Caller Name": "={{ $json.callerName }}",
+            "Company": "={{ $json.callerCompany }}",
+            "Category": "={{ $json.category }}",
+            "Reason": "={{ $json.reason }}",
+            "Action Requested": "={{ $json.action }}",
+            "Wants Callback": "={{ $json.wantsCallback }}",
+            "Summary": "={{ $json.summary }}",
+            "Recording": "={{ $json.recording }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Caller Number",
+              "displayName": "Caller Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Caller Name",
+              "displayName": "Caller Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Reason",
+              "displayName": "Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Action Requested",
+              "displayName": "Action Requested",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Wants Callback",
+              "displayName": "Wants Callback",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recording",
+              "displayName": "Recording",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      }
+    },
+    {
+      "name": "Notify Erwin",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        820,
+        -80
+      ],
+      "parameters": {
+        "sendTo": "__NOTIFY_EMAIL__",
+        "subject": "=📞 {{ $json.category || 'Anruf' }}: {{ $json.callerName || 'Unbekannt' }}{{ $json.callerCompany && $json.callerCompany !== 'none' ? ' (' + $json.callerCompany + ')' : '' }}",
+        "message": "=Kategorie: {{ $json.category }}\nAnrufer: {{ $json.callerName }} / {{ $json.callerCompany }}\nNummer: {{ $json.callerNumber }}\n\nGrund: {{ $json.reason }}\nGewünschte Aktion: {{ $json.action }}\nRückruf gewünscht: {{ $json.wantsCallback }}\n\nZusammenfassung: {{ $json.summary }}\nAufnahme: {{ $json.recording }}",
+        "options": {}
+      }
+    },
+    {
+      "name": "Info",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -320
+      ],
+      "parameters": {
+        "width": 520,
+        "height": 200,
+        "content": "## [YCAT/VAPI] Inbound - Front Desk Report\nEmpfängt die end-of-call-reports des Front-Desk-Assistenten (Assistant server.url zeigt hierher),\nliest die Structured Outputs aus,\nloggt in 'Inbound Calls' und mailt eine Zusammenfassung."
+      }
+    }
+  ],
+  "connections": {
+    "Vapi Report Webhook": {
+      "main": [
+        [
+          {
+            "node": "Is End-of-Call-Report?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is End-of-Call-Report?": {
+      "main": [
+        [
+          {
+            "node": "Extract Call Facts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Extract Call Facts": {
+      "main": [
+        [
+          {
+            "node": "Log Inbound Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Inbound Call": {
+      "main": [
+        [
+          {
+            "node": "Notify Erwin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

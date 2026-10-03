@@ -1,0 +1,13 @@
+# local config and generated files
+.env
+.state/
+build/
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# review notes for the author, not part of the public repo
+REVIEW.md

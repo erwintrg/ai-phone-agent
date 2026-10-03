@@ -1,0 +1,46 @@
+{
+  "name": "YCAT Front Desk - Elias (DE-EN)",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "temperature": 0.4,
+    "messages": [
+      {
+        "role": "system",
+        "content": "@file:prompt.md"
+      }
+    ]
+  },
+  "voice": {
+    "provider": "vapi",
+    "voiceId": "Elliot"
+  },
+  "transcriber": {
+    "provider": "deepgram",
+    "model": "nova-3",
+    "language": "multi"
+  },
+  "firstMessage": "Guten Tag, hier ist Elias, der digitale Assistent von Erwin Truong. Erwin ist gerade nicht erreichbar. Mit wem spreche ich, und worum geht es?",
+  "firstMessageMode": "assistant-speaks-first",
+  "startSpeakingPlan": {
+    "waitSeconds": 0.3
+  },
+  "endCallFunctionEnabled": true,
+  "maxDurationSeconds": 900,
+  "server": {
+    "url": "__REPORT_WEBHOOK_URL__"
+  },
+  "serverMessages": [
+    "end-of-call-report"
+  ],
+  "artifactPlan": {
+    "structuredOutputIds": [
+      "@so:caller_name",
+      "@so:caller_company",
+      "@so:caller_category",
+      "@so:reason_summary",
+      "@so:action_requested",
+      "@so:wants_erwin_callback"
+    ]
+  }
+}

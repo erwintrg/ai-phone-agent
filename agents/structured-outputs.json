@@ -1,0 +1,100 @@
+[
+  {
+    "name": "service_interest",
+    "schema": {
+      "type": "string",
+      "description": "Which service or solution the prospect is interested in, in their own words, based on the conversation and their form request."
+    }
+  },
+  {
+    "name": "motivation",
+    "schema": {
+      "type": "string",
+      "description": "What triggered the prospect's interest right now; the concrete pain or event behind the inquiry."
+    }
+  },
+  {
+    "name": "urgency",
+    "schema": {
+      "type": "string",
+      "description": "The prospect's timeline and how urgent the project is (e.g. 'within a month', 'exploring, no deadline')."
+    }
+  },
+  {
+    "name": "past_experience",
+    "schema": {
+      "type": "string",
+      "description": "Whether the prospect has past experience with automation/AI solutions and how that experience went."
+    }
+  },
+  {
+    "name": "budget",
+    "schema": {
+      "type": "string",
+      "description": "Any budget range or financial readiness the prospect mentioned; 'not discussed' if it did not come up."
+    }
+  },
+  {
+    "name": "call_summary",
+    "schema": {
+      "type": "string",
+      "description": "Three-sentence summary of the call in German: who, what they want, agreed next step."
+    }
+  },
+  {
+    "name": "appointment_interest",
+    "schema": {
+      "type": "boolean",
+      "description": "true if the prospect wants a follow-up call with Erwin, false otherwise."
+    }
+  },
+  {
+    "name": "callback_window",
+    "schema": {
+      "type": "string",
+      "description": "The agreed callback window for Erwin's follow-up call (weekday + morning/afternoon + any number correction), e.g. 'Dienstag vormittags, gleiche Nummer'; 'none' if no appointment was agreed."
+    }
+  },
+  {
+    "name": "caller_name",
+    "schema": {
+      "type": "string",
+      "description": "The caller's name as understood; 'unknown' if not given."
+    }
+  },
+  {
+    "name": "caller_company",
+    "schema": {
+      "type": "string",
+      "description": "The company the caller represents; 'none' for private calls."
+    }
+  },
+  {
+    "name": "caller_category",
+    "schema": {
+      "type": "string",
+      "description": "One of: new_inquiry, existing_customer, partner_supplier, sales_spam, other."
+    }
+  },
+  {
+    "name": "reason_summary",
+    "schema": {
+      "type": "string",
+      "description": "Two-sentence summary of why they called and what was agreed, in German."
+    }
+  },
+  {
+    "name": "action_requested",
+    "schema": {
+      "type": "string",
+      "description": "What the caller wants Erwin to do next, incl. preferred callback time if given."
+    }
+  },
+  {
+    "name": "wants_erwin_callback",
+    "schema": {
+      "type": "boolean",
+      "description": "true if the caller expects a callback from Erwin, false otherwise."
+    }
+  }
+]

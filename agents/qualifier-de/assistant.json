@@ -1,0 +1,45 @@
+{
+  "name": "YCAT Demo Qualifier - Elias (DE)",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "temperature": 0.4,
+    "messages": [
+      {
+        "role": "system",
+        "content": "@file:prompt.md"
+      }
+    ],
+    "toolIds": [
+      "@tool:check_availability",
+      "@tool:book_appointment"
+    ]
+  },
+  "voice": {
+    "provider": "vapi",
+    "voiceId": "Elliot"
+  },
+  "transcriber": {
+    "provider": "deepgram",
+    "model": "nova-2",
+    "language": "de"
+  },
+  "firstMessageMode": "assistant-speaks-first-with-model-generated-message",
+  "startSpeakingPlan": {
+    "waitSeconds": 0.3
+  },
+  "endCallFunctionEnabled": true,
+  "maxDurationSeconds": 600,
+  "artifactPlan": {
+    "structuredOutputIds": [
+      "@so:service_interest",
+      "@so:motivation",
+      "@so:urgency",
+      "@so:past_experience",
+      "@so:budget",
+      "@so:call_summary",
+      "@so:appointment_interest",
+      "@so:callback_window"
+    ]
+  }
+}

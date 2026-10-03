@@ -1,0 +1,21 @@
+{
+  "message": {
+    "type": "end-of-call-report",
+    "endedReason": "assistant-ended-call",
+    "startedAt": "2026-10-05T06:40:00.000Z",
+    "endedAt": "2026-10-05T06:43:10.000Z",
+    "call": {"id": "call-demo-inbound-0001", "type": "inboundPhoneCall", "customer": {"number": "+493001234599"}},
+    "analysis": {"summary": "Max Mustermann von Beispiel Solar GmbH interessiert sich für einen KI-Telefonassistenten, der neue Anfragen sofort zurückruft. Er wünscht ein kurzes Gespräch mit Erwin, am liebsten Dienstagvormittag."},
+    "artifact": {
+      "recordingUrl": "https://recordings.example.com/call-demo-inbound-0001.wav",
+      "structuredOutputs": {
+        "so-demo-caller-name": {"name": "caller_name", "result": "Max Mustermann"},
+        "so-demo-caller-company": {"name": "caller_company", "result": "Beispiel Solar GmbH"},
+        "so-demo-caller-category": {"name": "caller_category", "result": "new_inquiry"},
+        "so-demo-reason-summary": {"name": "reason_summary", "result": "Neue Anfrage zu einem KI-Telefonassistenten für eingehende Anfragen. Rückruf von Erwin vereinbart."},
+        "so-demo-action-requested": {"name": "action_requested", "result": "Rückruf Dienstagvormittag"},
+        "so-demo-wants-erwin-callback": {"name": "wants_erwin_callback", "result": true}
+      }
+    }
+  }
+}

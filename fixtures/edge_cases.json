@@ -1,0 +1,16 @@
+{
+  "title": "Rule and error branches of the calendar webhook",
+  "call_id": "call-demo-0002",
+  "turns": [
+    {"label": "less than 2 h ahead", "tool": "check_availability", "arguments": {"startzeit": "@today 10:30"}, "expect": "Dieser Termin liegt zu kurzfristig"},
+    {"label": "ends after 16:45", "tool": "check_availability", "arguments": {"startzeit": "@tue 16:30"}, "expect": "Erwin ist werktags"},
+    {"label": "more than 30 days out", "tool": "check_availability", "arguments": {"startzeit": "@+42d 11:00"}, "expect": "So weit im Voraus"},
+    {"label": "no offset, read as Berlin time", "tool": "check_availability", "arguments": {"startzeit": "@tue 15:00 local"}, "expect": "FREI: Dienstag"},
+    {"label": "90 min clamped to 60", "tool": "check_availability", "arguments": {"startzeit": "@wed 15:30", "dauer_minuten": 90}, "expect": "FREI:"},
+    {"label": "same slot booked twice", "tool": "book_appointment", "arguments": {"startzeit": "@tue 14:00", "name": "John Example", "telefon": "+49 30 01234568"}, "expect": "NICHT FREI"},
+    {"label": "garbled time", "tool": "check_availability", "arguments": {"startzeit": "naechsten Dienstag nachmittags"}, "expect": "Die Uhrzeit war nicht verstaendlich"},
+    {"label": "unknown function", "tool": "cancel_appointment", "arguments": {"startzeit": "@tue 14:00"}, "expect": "Interner Fehler: unbekannte Funktion"},
+    {"label": "not a tool-calls message", "tool": "check_availability", "arguments": {"startzeit": "@tue 14:00"}, "message_type": "status-update", "expect": "Interner Fehler: unerwartetes Ereignis"},
+    {"label": "wrong x-vapi-secret", "tool": "check_availability", "arguments": {"startzeit": "@tue 14:00"}, "secret": "wrong-secret", "expect": "Interner Fehler: nicht autorisiert", "expect_status": 401}
+  ]
+}

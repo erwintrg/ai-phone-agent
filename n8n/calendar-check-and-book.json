@@ -1,0 +1,311 @@
+{
+  "name": "[YCAT/VAPI] Elias - Kalender (Check + Buchung)",
+  "nodes": [
+    {
+      "name": "Vapi Kalender Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vapi-calendar",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "name": "Parse + Pruefen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Parse Vapi tool-call + validate booking rules (Europe/Berlin).\nconst SECRET = '__VAPI_WEBHOOK_SECRET__';\nconst w = $input.first().json;\nconst hdrs = w.headers || {};\nif (String(hdrs['x-vapi-secret'] || '') !== SECRET) {\n  return [{ json: { action: 'error', toolCallId: 'unauthorized',\n            result: 'Interner Fehler: nicht autorisiert.' } }];\n}\nconst msg = (w.body && w.body.message) || {};\nconst tc = (msg.toolCallList && msg.toolCallList[0]) || {};\nconst toolCallId = tc.id || '';\nconst fname = (tc.function && tc.function.name) || tc.name || '';\nlet args = (tc.function && tc.function.arguments) || tc.arguments || {};\nif (typeof args === 'string') { try { args = JSON.parse(args); } catch (e) { args = {}; } }\n\nconst fail = (text) => [{ json: { action: 'error', toolCallId, result: text } }];\nif (msg.type !== 'tool-calls' || !toolCallId) return fail('Interner Fehler: unerwartetes Ereignis.');\nif (fname !== 'check_availability' && fname !== 'book_appointment')\n  return fail('Interner Fehler: unbekannte Funktion.');\n\n// --- Berlin time helpers (no external deps) ---\nconst berlinFmt = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin',\n  weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit',\n  hour: '2-digit', minute: '2-digit', hour12: false });\nconst parts = (d) => Object.fromEntries(berlinFmt.formatToParts(d).map(p => [p.type, p.value]));\n\nlet raw = String(args.startzeit || '').trim();\nif (!raw) return fail('Es fehlt die gewuenschte Uhrzeit.');\nlet start;\nif (/[+-]\\d\\d:?\\d\\d$|Z$/.test(raw)) {\n  start = new Date(raw);\n} else {\n  // no offset given -> interpret as Berlin wall-clock: pick the offset that round-trips\n  for (const off of ['+02:00', '+01:00']) {\n    const cand = new Date(raw + off);\n    if (isNaN(cand)) continue;\n    const p = parts(cand);\n    const rt = `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;\n    if (raw.startsWith(rt.slice(0, raw.length))) { start = cand; break; }\n    start = start || cand;\n  }\n}\nif (!start || isNaN(start)) return fail('Die Uhrzeit war nicht verstaendlich. Bitte nochmal nach Datum und Uhrzeit fragen.');\n\nconst durMin = Math.min(Math.max(parseInt(args.dauer_minuten) || 30, 15), 60);\nconst end = new Date(start.getTime() + durMin * 60000);\nconst now = new Date();\n\nif (start.getTime() < now.getTime() + 2 * 3600 * 1000)\n  return fail('Dieser Termin liegt zu kurzfristig oder in der Vergangenheit. Der frueheste Termin ist in etwa zwei Stunden.');\nif (start.getTime() > now.getTime() + 30 * 86400 * 1000)\n  return fail('So weit im Voraus buchen wir noch nicht. Bitte einen Termin innerhalb der naechsten vier Wochen vorschlagen.');\n\nconst p = parts(start), pe = parts(end);\nif (String(p.weekday).startsWith('Sa') || String(p.weekday).startsWith('So'))\n  return fail('Am Wochenende ist Erwin nicht erreichbar. Bitte einen Werktag vorschlagen.');\nconst startHM = parseInt(p.hour) * 60 + parseInt(p.minute);\nconst endHM = parseInt(pe.hour) * 60 + parseInt(pe.minute);\nif (startHM < 10 * 60 || endHM > 16 * 60 + 45 || endHM <= startHM)\n  return fail('Erwin ist werktags zwischen zehn Uhr und viertel vor fuenf erreichbar. Bitte eine Uhrzeit in diesem Fenster vorschlagen.');\n\nconst spokenFmt = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin',\n  weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });\nconst clean = (v) => String(v == null ? '' : v).slice(0, 200);\n\nreturn [{ json: {\n  action: fname === 'check_availability' ? 'check' : 'book',\n  toolCallId,\n  startISO: start.toISOString(), endISO: end.toISOString(),\n  bufStartISO: new Date(start.getTime() - 15 * 60000).toISOString(),\n  bufEndISO: new Date(end.getTime() + 15 * 60000).toISOString(),\n  spoken: spokenFmt.format(start) + ' Uhr',\n  name: clean(args.name), firma: clean(args.firma), telefon: clean(args.telefon),\n  email: clean(args.email), thema: clean(args.thema),\n} }];"
+      }
+    },
+    {
+      "name": "Fehler?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        400,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0f726dd9-5606-5011-99ba-7f89cbc54272",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "error",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "freeBusy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        620,
+        120
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/calendar/v3/freeBusy",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleCalendarOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ timeMin: $json.bufStartISO, timeMax: $json.bufEndISO, timeZone: \"Europe/Berlin\", items: [ { id: \"__GOOGLE_CALENDAR_ID__\" } ] }) }}",
+        "options": {}
+      }
+    },
+    {
+      "name": "Bewerten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        820,
+        120
+      ],
+      "parameters": {
+        "jsCode": "// freeBusy result -> frei/nicht frei. Only busy intervals ever reach this point.\nconst ctx = $('Parse + Pruefen').first().json;\nconst fb = $input.first().json;\nconst busy = ((fb.calendars || {})['__GOOGLE_CALENDAR_ID__'] || {}).busy || [];\nconst available = busy.length === 0;\nlet result;\nif (ctx.action === 'check') {\n  result = available\n    ? `FREI: ${ctx.spoken} ist verfuegbar. Bei Zusage direkt mit book_appointment buchen.`\n    : `NICHT FREI: ${ctx.spoken} ist leider schon verplant. Bitte einen anderen Vorschlag erfragen. Keine Details nennen.`;\n} else {\n  result = available ? '' : `NICHT FREI: ${ctx.spoken} ist inzwischen verplant. Bitte einen anderen Vorschlag erfragen.`;\n}\nreturn [{ json: { ...ctx, available, result } }];"
+      }
+    },
+    {
+      "name": "Buchen?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1020,
+        120
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6c7cfe31-193f-5d15-84a5-678bcc8af821",
+              "leftValue": "={{ $json.action === 'book' && $json.available }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Termin eintragen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1240,
+        40
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/calendar/v3/calendars/__GOOGLE_CALENDAR_ID_URLENCODED__/events",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleCalendarOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "sendUpdates",
+              "value": "all"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  summary: \"YCAT Demo-Termin: \" + ($json.name || \"Interessent\") + ($json.firma ? \" (\" + $json.firma + \")\" : \"\"),\n  description: \"Gebucht von Elias (Vapi Demo-Assistent).\\n\"\n    + \"Name: \" + ($json.name || \"-\") + \"\\n\"\n    + \"Firma: \" + ($json.firma || \"-\") + \"\\n\"\n    + \"Telefon: \" + ($json.telefon || \"-\") + \"\\n\"\n    + \"E-Mail: \" + ($json.email || \"-\") + \"\\n\"\n    + \"Thema: \" + ($json.thema || \"-\"),\n  start: { dateTime: $json.startISO, timeZone: \"Europe/Berlin\" },\n  end: { dateTime: $json.endISO, timeZone: \"Europe/Berlin\" },\n  attendees: $json.email ? [ { email: $json.email } ] : [],\n  reminders: { useDefault: true }\n}) }}",
+        "options": {}
+      }
+    },
+    {
+      "name": "Bestaetigung",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        40
+      ],
+      "parameters": {
+        "jsCode": "// event created -> confirmation for the model\nconst ctx = $('Bewerten').first().json;\nconst ev = $input.first().json;\nreturn [{ json: { toolCallId: ctx.toolCallId,\n  result: `GEBUCHT: ${ctx.spoken} ist fest eingetragen (Termin-ID ${ev.id || 'ok'}). Bitte verbindlich zusammenfassen.` } }];"
+      }
+    },
+    {
+      "name": "Antwort",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1660,
+        0
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ JSON.stringify({ results: [ { toolCallId: $json.toolCallId, result: $json.result } ] }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "Info",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -300
+      ],
+      "parameters": {
+        "width": 620,
+        "height": 240,
+        "content": "## [YCAT/VAPI] Elias - Kalender (Check + Buchung)\nVapi function tools `check_availability` + `book_appointment` (x-vapi-secret-gesichert).\nfreeBusy auf dem konfigurierten Kalender = NUR busy-Intervalle, keine Event-Details -> kein Privacy-Leak.\nRegeln: Mo-Fr, 10:00-16:45 Berlin, >=2h Vorlauf, <=30 Tage, 15-min-Puffer beidseitig.\nBuchung: Google-Calendar-Event mit allen Lead-Daten, Einladung an E-Mail falls erfasst."
+      }
+    }
+  ],
+  "connections": {
+    "Vapi Kalender Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse + Pruefen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse + Pruefen": {
+      "main": [
+        [
+          {
+            "node": "Fehler?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fehler?": {
+      "main": [
+        [
+          {
+            "node": "Antwort",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "freeBusy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "freeBusy": {
+      "main": [
+        [
+          {
+            "node": "Bewerten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bewerten": {
+      "main": [
+        [
+          {
+            "node": "Buchen?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buchen?": {
+      "main": [
+        [
+          {
+            "node": "Termin eintragen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Antwort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Termin eintragen": {
+      "main": [
+        [
+          {
+            "node": "Bestaetigung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bestaetigung": {
+      "main": [
+        [
+          {
+            "node": "Antwort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

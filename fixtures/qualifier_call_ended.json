@@ -1,0 +1,18 @@
+{
+  "_comment": "Shape of GET https://api.vapi.ai/call/{id} after the demo call, reduced to the fields the workflow reads.",
+  "id": "call-demo-0001",
+  "status": "ended",
+  "endedReason": "assistant-ended-call",
+  "artifact": {
+    "structuredOutputs": {
+      "so-demo-service-interest": {"name": "service_interest", "result": "Sofortiger Rückruf auf Formular-Anfragen"},
+      "so-demo-motivation": {"name": "motivation", "result": "Zwei größere Aufträge an schnellere Wettbewerber verloren"},
+      "so-demo-urgency": {"name": "urgency", "result": "Vor dem Winter"},
+      "so-demo-past-experience": {"name": "past_experience", "result": "Keine"},
+      "so-demo-budget": {"name": "budget", "result": "not discussed"},
+      "so-demo-appointment-interest": {"name": "appointment_interest", "result": true},
+      "so-demo-call-summary": {"name": "call_summary", "result": "Jane Example von Acme Example GmbH möchte Formular-Anfragen automatisch zurückrufen lassen. Auslöser sind verlorene Aufträge, Ziel ist eine Lösung vor dem Winter. Termin mit Erwin am Dienstag um 14 Uhr gebucht."},
+      "so-demo-callback-window": {"name": "callback_window", "result": "Dienstag 14:00, gleiche Nummer"}
+    }
+  }
+}

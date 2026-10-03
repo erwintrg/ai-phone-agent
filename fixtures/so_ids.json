@@ -1,0 +1,17 @@
+{
+  "_comment": "Demo stand-ins for Vapi structured output ids. Real ids are UUIDs created by `python -m phone_agent sync`.",
+  "service_interest": "so-demo-service-interest",
+  "motivation": "so-demo-motivation",
+  "urgency": "so-demo-urgency",
+  "past_experience": "so-demo-past-experience",
+  "budget": "so-demo-budget",
+  "call_summary": "so-demo-call-summary",
+  "appointment_interest": "so-demo-appointment-interest",
+  "callback_window": "so-demo-callback-window",
+  "caller_name": "so-demo-caller-name",
+  "caller_company": "so-demo-caller-company",
+  "caller_category": "so-demo-caller-category",
+  "reason_summary": "so-demo-reason-summary",
+  "action_requested": "so-demo-action-requested",
+  "wants_erwin_callback": "so-demo-wants-erwin-callback"
+}

@@ -1,0 +1,61 @@
+{
+  "type": "function",
+  "async": false,
+  "function": {
+    "name": "book_appointment",
+    "description": "Traegt den Termin mit Erwin verbindlich in den Kalender ein. Nur aufrufen, nachdem check_availability FREI gemeldet hat und die Rueckrufnummer bestaetigt wurde.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "startzeit": {
+          "type": "string",
+          "description": "Bestaetigter Beginn als ISO 8601 mit Berliner Offset, z.B. 2026-07-21T14:00:00+02:00"
+        },
+        "dauer_minuten": {
+          "type": "number",
+          "description": "Dauer in Minuten, Standard 30"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name der Person"
+        },
+        "firma": {
+          "type": "string",
+          "description": "Firma der Person"
+        },
+        "telefon": {
+          "type": "string",
+          "description": "Bestaetigte Rueckrufnummer"
+        },
+        "email": {
+          "type": "string",
+          "description": "E-Mail der Person, falls genannt"
+        },
+        "thema": {
+          "type": "string",
+          "description": "Anliegen / Thema des Gespraechs"
+        }
+      },
+      "required": [
+        "startzeit",
+        "name",
+        "telefon"
+      ]
+    }
+  },
+  "server": {
+    "url": "__CALENDAR_WEBHOOK_URL__",
+    "secret": "__VAPI_WEBHOOK_SECRET__",
+    "timeoutSeconds": 20
+  },
+  "messages": [
+    {
+      "type": "request-start",
+      "content": "Alles klar, ich trage das eben fest ein."
+    },
+    {
+      "type": "request-failed",
+      "content": "Da komme ich gerade nicht in den Kalender. Ich notiere Ihren Wunsch und Erwin bestaetigt den Termin persoenlich."
+    }
+  ]
+}

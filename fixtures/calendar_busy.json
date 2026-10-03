@@ -1,0 +1,7 @@
+{
+  "_comment": "Busy blocks of the fake calendar. Times are relative to the clock: '@tue 10:40' = next Tuesday 10:40 Europe/Berlin.",
+  "busy": [
+    {"start": "@tue 10:40", "end": "@tue 11:30"},
+    {"start": "@thu 09:00", "end": "@thu 12:00"}
+  ]
+}
